@@ -413,3 +413,45 @@ Failed asserting that false is true.
 
   Tests:    22 failed, 3 passed (19 assertions)
   Duration: 0.74s
+
+  
+  --------------------------------------------------------------------------------------------------------------
+
+  After
+
+  ------------------------------------------------------------------------------------------------------------------
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application returns a successful response                                                                                     0.16s  
+
+   PASS  Tests\Feature\NutritionLogTest
+  ✓ it rejects unauthenticated export request                                                                                         0.09s  
+  ✓ it rejects unauthenticated summary request                                                                                        0.01s  
+  ✓ it returns 422 when start_date is missing                                                                                         0.03s  
+  ✓ it returns 422 when end_date is missing                                                                                           0.01s  
+  ✓ it returns 422 when end_date is before start_date                                                                                 0.01s  
+  ✓ it returns 422 when date range exceeds 90 days                                                                                    0.01s  
+  ✓ it accepts exactly 90 days as a valid range                                                                                       0.01s  
+  ✓ it export response has content-type text/csv                                                                                      0.01s  
+  ✓ it export response has correct content-disposition header                                                                         0.01s  
+  ✓ it export csv contains the header row                                                                                             0.01s  
+  ✓ it export rows are ordered by date then meal name                                                                                 0.02s  
+  ✓ it computes calories when stored value is null                                                                                    0.01s  
+  ✓ it uses stored calories when present in export                                                                                    0.01s  
+  ✓ it required 408.0 row is correct                                                                                                  0.01s  
+  ✓ it export contains a final TOTAL row                                                                                              0.01s  
+  ✓ it TOTAL row values are correct                                                                                                   0.02s  
+  ✓ it user A cannot export user B logs                                                                                               0.02s  
+  ✓ it user A summary does not include user B logs                                                                                    0.01s  
+  ✓ it summary returns correct date range                                                                                             0.01s  
+  ✓ it summary returns per-day totals                                                                                                 0.02s  
+  ✓ it summary omits days with no logs                                                                                                0.01s  
+  ✓ it summary uses computed calories when stored value is null                                                                       0.01s  
+  ✓ it summary uses stored calories when present                                                                                      0.02s  
+  ✓ it neutralizes meal names starting with formula characters                                                                        0.02s  
+
+  Tests:    26 passed (42 assertions)
+  Duration: 0.78s
