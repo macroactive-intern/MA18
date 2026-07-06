@@ -90,7 +90,7 @@ it('export csv contains the header row', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-07')
-            ->getContent()
+            ->streamedContent()
     );
 
     expect($rows[0])->toBe(['Date', 'Meal', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Calories']);
@@ -106,7 +106,7 @@ it('export rows are ordered by date then meal name', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-07')
-            ->getContent()
+            ->streamedContent()
     );
 
     expect($rows[1][0])->toBe('2026-01-01');
@@ -128,7 +128,7 @@ it('computes calories when stored value is null', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-01')
-            ->getContent()
+            ->streamedContent()
     );
 
     // 10*4 + 20*4 + 5*9 = 40 + 80 + 45 = 165.0
@@ -146,7 +146,7 @@ it('uses stored calories when present in export', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-01')
-            ->getContent()
+            ->streamedContent()
     );
 
     expect($rows[1][5])->toBe('500.0');
@@ -163,7 +163,7 @@ it('required 408.0 row is correct', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-01')
-            ->getContent()
+            ->streamedContent()
     );
 
     expect($rows[1][5])->toBe('408.0');
@@ -180,7 +180,7 @@ it('export contains a final TOTAL row', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-01')
-            ->getContent()
+            ->streamedContent()
     );
 
     expect(end($rows)[0])->toBe('TOTAL');
@@ -201,7 +201,7 @@ it('TOTAL row values are correct', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-07')
-            ->getContent()
+            ->streamedContent()
     );
 
     $total = end($rows);
@@ -225,7 +225,7 @@ it('user A cannot export user B logs', function () {
 
     $content = $this->actingAs($userA, 'sanctum')
         ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-07')
-        ->getContent();
+        ->streamedContent();
 
     expect($content)->not->toContain('User B Secret Meal');
 });
@@ -271,11 +271,12 @@ it('summary returns per-day totals', function () {
 
     // protein: 50, carbs: 75, fat: 20
     // calories: (30*4+45*4+12*9) + (20*4+30*4+8*9) = 408 + 272 = 680
-    $response->assertJsonPath('days.0.date', '2026-01-01');
-    $response->assertJsonPath('days.0.total_protein_g', 50.0);
-    $response->assertJsonPath('days.0.total_carbs_g', 75.0);
-    $response->assertJsonPath('days.0.total_fat_g', 20.0);
-    $response->assertJsonPath('days.0.total_calories', 680.0);
+    $day = $response->json('days.0');
+    expect($day['date'])->toBe('2026-01-01');
+    expect((float) $day['total_protein_g'])->toBe(50.0);
+    expect((float) $day['total_carbs_g'])->toBe(75.0);
+    expect((float) $day['total_fat_g'])->toBe(20.0);
+    expect((float) $day['total_calories'])->toBe(680.0);
 });
 
 it('summary omits days with no logs', function () {
@@ -302,9 +303,11 @@ it('summary uses computed calories when stored value is null', function () {
         'protein_g' => 30, 'carbs_g' => 45, 'fat_g' => 12, 'calories' => null,
     ]);
 
-    $this->actingAs($user, 'sanctum')
+    $calories = $this->actingAs($user, 'sanctum')
         ->getJson('/api/nutrition-logs/summary?start_date=2026-01-01&end_date=2026-01-01')
-        ->assertJsonPath('days.0.total_calories', 408.0);
+        ->json('days.0.total_calories');
+
+    expect((float) $calories)->toBe(408.0);
 });
 
 it('summary uses stored calories when present', function () {
@@ -315,9 +318,11 @@ it('summary uses stored calories when present', function () {
         'protein_g' => 30, 'carbs_g' => 45, 'fat_g' => 12, 'calories' => 500.0,
     ]);
 
-    $this->actingAs($user, 'sanctum')
+    $calories = $this->actingAs($user, 'sanctum')
         ->getJson('/api/nutrition-logs/summary?start_date=2026-01-01&end_date=2026-01-01')
-        ->assertJsonPath('days.0.total_calories', 500.0);
+        ->json('days.0.total_calories');
+
+    expect((float) $calories)->toBe(500.0);
 });
 
 // --- CSV injection test ---
@@ -333,7 +338,7 @@ it('neutralizes meal names starting with formula characters', function () {
     $rows = parseCsv(
         $this->actingAs($user, 'sanctum')
             ->get('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-01-01')
-            ->getContent()
+            ->streamedContent()
     );
 
     expect($rows[1][1])->not->toStartWith('=');
