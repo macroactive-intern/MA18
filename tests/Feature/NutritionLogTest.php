@@ -60,6 +60,15 @@ it('returns 422 when date range exceeds 90 days', function () {
         ->assertUnprocessable();
 });
 
+it('accepts exactly 90 days as a valid range', function () {
+    $user = User::factory()->create();
+
+    // 2026-01-01 to 2026-03-31 = 90 days inclusive
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/nutrition-logs/export?start_date=2026-01-01&end_date=2026-03-31')
+        ->assertOk();
+});
+
 // --- CSV header tests ---
 
 it('export response has content-type text/csv', function () {
